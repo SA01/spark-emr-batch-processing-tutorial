@@ -51,6 +51,7 @@ def process_yellow_trips_data(data: DataFrame) -> DataFrame:
         data
         .withColumnRenamed("tpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("tpep_dropoff_datetime", "dropoff_datetime")
+        .withColumn("taxi_type", F.lit("yellow"))
         .withColumn("ehail_fee", F.lit(0.0))
         .transform(clean_numeric_fields)
         .transform(clean_out_of_range_data("2023-01-01 00:00:00", "2023-01-31 23:59:59"))
@@ -66,6 +67,7 @@ def process_green_trips_data(data: DataFrame) -> DataFrame:
         data
         .withColumnRenamed("lpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("lpep_dropoff_datetime", "dropoff_datetime")
+        .withColumn("taxi_type", F.lit("green"))
         .withColumn("ehail_fee", F.when(F.col("ehail_fee").isNull(), F.lit(0.0)).otherwise(F.col("ehail_fee")))
         .withColumn("airport_fee", F.lit(0.0))
         .transform(clean_numeric_fields)
@@ -143,9 +145,3 @@ if __name__ == '__main__':
     print(f"Final data count: {combined_data.count()}")
 
     combined_data.write.option("overwrite", "true").parquet(step_args["output_path"])
-
-
-# * in green trips dataset set ehail_fee null values to 0
-# * in green trips, add airport fee column, set it to 0
-# * pickup relevant columns, drop store_and_fwd_flag from both sets
-# * union both datasets by name
