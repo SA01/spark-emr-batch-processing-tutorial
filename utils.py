@@ -24,3 +24,7 @@ def create_spark_session(app_name: str, is_local: False) -> SparkSession:
             .getOrCreate()
 
     return spark_session
+
+
+def trim_slash(text: str):
+    return text[:-1] if text.endswith("/") else text

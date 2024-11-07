@@ -1,9 +1,11 @@
+from multiprocessing.managers import Namespace
 from typing import Callable
 
+import argparse
 from pyspark.sql import DataFrame
 import pyspark.sql.functions as F
 
-from utils import create_spark_session
+from utils import create_spark_session, trim_slash
 
 numeric_columns = [
     "fare_amount", "extra", "mta_tax", "tip_amount", "tolls_amount", "improvement_surcharge", "total_amount",
@@ -65,25 +67,55 @@ def process_green_trips_data(data: DataFrame) -> DataFrame:
         .withColumnRenamed("lpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("lpep_dropoff_datetime", "dropoff_datetime")
         .withColumn("ehail_fee", F.when(F.col("ehail_fee").isNull(), F.lit(0.0)).otherwise(F.col("ehail_fee")))
+        .withColumn("airport_fee", F.lit(0.0))
         .transform(clean_numeric_fields)
         .transform(clean_out_of_range_data("2023-01-01 00:00:00", "2023-01-31 23:59:59"))
-        .drop("store_and_fwd_flag", "payment_type", "RatecodeID")
+        .drop("store_and_fwd_flag", "payment_type", "RatecodeID", "trip_type")
     )
 
     return res_data
 
 
+def parse_job_arguments() -> dict[str, str]:
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument(
+        "--yellow_trips_path", type=str, help="Path of yellow trips data"
+    )
+    arg_parser.add_argument(
+        "--green_trips_path", type=str, help="Path of green trips data"
+    )
+    arg_parser.add_argument(
+        "--output_path", type=str, help="Path to write output of this step"
+    )
+
+    job_step_args = arg_parser.parse_args()
+    print(job_step_args)
+
+    yellow_trips_path = trim_slash(job_step_args.yellow_trips_path)
+    green_trips_path = trim_slash(job_step_args.green_trips_path)
+    output_path = trim_slash(job_step_args.output_path)
+
+    return {
+        "yellow_trips_path": yellow_trips_path,
+        "green_trips_path": green_trips_path,
+        "output_path": output_path
+    }
+
+
 if __name__ == '__main__':
+    step_args = parse_job_arguments()
+    print(step_args)
+
     spark = create_spark_session(app_name="Data Cleanup", is_local=True)
 
     yellow_data = (
-        spark.read.parquet("data/yellow-taxi-trip-records/*.parquet")
+        spark.read.parquet(step_args["yellow_trips_path"] + "/*.parquet")
         .withColumnRenamed("tpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("tpep_dropoff_datetime", "dropoff_datetime")
     )
 
     green_data = (
-        spark.read.parquet("data/green-taxi-trip-records/*.parquet")
+        spark.read.parquet(step_args["green_trips_path"] + "/*.parquet")
         .withColumnRenamed("lpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("lpep_dropoff_datetime", "dropoff_datetime")
     )
@@ -103,9 +135,14 @@ if __name__ == '__main__':
     clean_yellow_data.summary().show(truncate=False)
     clean_green_data.summary().show(truncate=False)
 
+    clean_yellow_data.printSchema()
+    clean_green_data.printSchema()
+
     combined_data = clean_yellow_data.unionByName(clean_green_data)
 
     print(f"Final data count: {combined_data.count()}")
+
+    combined_data.write.option("overwrite", "true").parquet(step_args["output_path"])
 
 
 # * in green trips dataset set ehail_fee null values to 0
