@@ -44,7 +44,7 @@ def clean_out_of_range_data(min_date_str: str, max_date_str: str) -> Callable[[D
     return clean_out_of_range_data_internal
 
 
-def process_yellow_trips_data(data: DataFrame) -> DataFrame:
+def process_yellow_trips_data(data_start_time_str, data_end_time_str, data: DataFrame) -> DataFrame:
     print("Processing yellow trips data")
 
     res_data = (
@@ -54,13 +54,13 @@ def process_yellow_trips_data(data: DataFrame) -> DataFrame:
         .withColumn("taxi_type", F.lit("yellow"))
         .withColumn("ehail_fee", F.lit(0.0))
         .transform(clean_numeric_fields)
-        .transform(clean_out_of_range_data("2023-01-01 00:00:00", "2023-01-31 23:59:59"))
+        .transform(clean_out_of_range_data(data_start_time_str, data_end_time_str))
         .drop("store_and_fwd_flag", "payment_type", "RatecodeID")
     )
 
     return res_data
 
-def process_green_trips_data(data: DataFrame) -> DataFrame:
+def process_green_trips_data(data_start_time_str, data_end_time_str, data: DataFrame) -> DataFrame:
     print("Processing green trips data")
 
     res_data = (
@@ -71,23 +71,28 @@ def process_green_trips_data(data: DataFrame) -> DataFrame:
         .withColumn("ehail_fee", F.when(F.col("ehail_fee").isNull(), F.lit(0.0)).otherwise(F.col("ehail_fee")))
         .withColumn("airport_fee", F.lit(0.0))
         .transform(clean_numeric_fields)
-        .transform(clean_out_of_range_data("2023-01-01 00:00:00", "2023-01-31 23:59:59"))
+        .transform(clean_out_of_range_data(data_start_time_str, data_end_time_str))
         .drop("store_and_fwd_flag", "payment_type", "RatecodeID", "trip_type")
     )
 
     return res_data
 
-
 def parse_job_arguments() -> dict[str, str]:
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
-        "--yellow_trips_path", type=str, help="Path of yellow trips data"
+        "--yellow_trips_path", required=True, type=str, help="Path of yellow trips data"
     )
     arg_parser.add_argument(
-        "--green_trips_path", type=str, help="Path of green trips data"
+        "--green_trips_path", required=True, type=str, help="Path of green trips data"
     )
     arg_parser.add_argument(
-        "--output_path", type=str, help="Path to write output of this step"
+        "--data_start_date", required=True, type=str, help="Start of data date (YYYY-mm-dd)"
+    )
+    arg_parser.add_argument(
+        "--data_end_date", required=True, type=str, help="End of data date (YYYY-mm-dd)"
+    )
+    arg_parser.add_argument(
+        "--output_path", required=True, type=str, help="Path to write output of this step"
     )
 
     job_step_args = arg_parser.parse_args()
@@ -95,11 +100,15 @@ def parse_job_arguments() -> dict[str, str]:
 
     yellow_trips_path = trim_slash(job_step_args.yellow_trips_path)
     green_trips_path = trim_slash(job_step_args.green_trips_path)
+    data_start_timestamp_str = f"{job_step_args.data_start_date} 00:00:00"
+    data_end_timestamp_str = f"{job_step_args.data_end_date} 23:59:59"
     output_path = trim_slash(job_step_args.output_path)
 
     return {
         "yellow_trips_path": yellow_trips_path,
         "green_trips_path": green_trips_path,
+        "data_start_timestamp_str": data_start_timestamp_str,
+        "data_end_timestamp_str": data_end_timestamp_str,
         "output_path": output_path
     }
 
@@ -131,8 +140,17 @@ if __name__ == '__main__':
     yellow_data.summary().show(truncate=False)
     green_data.summary().show(truncate=False)
 
-    clean_yellow_data = process_yellow_trips_data(yellow_data)
-    clean_green_data = process_green_trips_data(green_data)
+    clean_yellow_data = process_yellow_trips_data(
+        data_start_time_str=step_args["data_start_timestamp_str"],
+        data_end_time_str=step_args["data_end_timestamp_str"],
+        data=yellow_data
+    )
+
+    clean_green_data = process_green_trips_data(
+        data_start_time_str=step_args["data_start_timestamp_str"],
+        data_end_time_str=step_args["data_end_timestamp_str"],
+        data=green_data
+    )
 
     clean_yellow_data.summary().show(truncate=False)
     clean_green_data.summary().show(truncate=False)
