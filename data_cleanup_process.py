@@ -77,7 +77,6 @@ def process_green_trips_data(data_start_time_str, data_end_time_str, data: DataF
 
     return res_data
 
-
 def attach_locations(data: DataFrame, locations_data: DataFrame) -> DataFrame:
     result_data = (
         data
@@ -95,6 +94,7 @@ def attach_locations(data: DataFrame, locations_data: DataFrame) -> DataFrame:
 
     return result_data
 
+  
 def parse_job_arguments() -> dict[str, str]:
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
