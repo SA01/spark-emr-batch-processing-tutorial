@@ -187,4 +187,4 @@ if __name__ == '__main__':
 
     print(f"Final data count: {data_with_locations.count()}")
 
-    data_with_locations.write.option("overwrite", "true").parquet(step_args["output_path"])
+    data_with_locations.write.mode("overwrite").parquet(step_args["output_path"])
