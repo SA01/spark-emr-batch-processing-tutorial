@@ -1,4 +1,3 @@
-from multiprocessing.managers import Namespace
 from typing import Callable
 
 import argparse
