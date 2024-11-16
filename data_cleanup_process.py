@@ -116,7 +116,6 @@ def parse_job_arguments() -> dict[str, str]:
     )
 
     job_step_args = arg_parser.parse_args()
-    print(job_step_args)
 
     yellow_trips_path = trim_slash(job_step_args.yellow_trips_path)
     green_trips_path = trim_slash(job_step_args.green_trips_path)
@@ -125,7 +124,7 @@ def parse_job_arguments() -> dict[str, str]:
     data_end_timestamp_str = f"{job_step_args.data_end_date} 23:59:59"
     output_path = trim_slash(job_step_args.output_path)
 
-    return {
+    job_args = {
         "yellow_trips_path": yellow_trips_path,
         "green_trips_path": green_trips_path,
         "locations_lookup_path": locations_lookup_path,
@@ -134,25 +133,32 @@ def parse_job_arguments() -> dict[str, str]:
         "output_path": output_path
     }
 
+    print("Job args")
+    for key, value in job_args.items():
+        print(f"- {key}: {value}")
+
+    return job_args
+
 
 if __name__ == '__main__':
     step_args = parse_job_arguments()
-    print(step_args)
-
     spark = create_spark_session(app_name="Data Cleanup", is_local=True)
 
+    print(f"Reading Yellow trips data from {step_args['yellow_trips_path']}")
     yellow_data = (
         spark.read.parquet(step_args["yellow_trips_path"] + "/*.parquet")
         .withColumnRenamed("tpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("tpep_dropoff_datetime", "dropoff_datetime")
     )
 
+    print(f"Reading Green trips data from {step_args['green_trips_path']}")
     green_data = (
         spark.read.parquet(step_args["green_trips_path"] + "/*.parquet")
         .withColumnRenamed("lpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("lpep_dropoff_datetime", "dropoff_datetime")
     )
 
+    print(f"Reading locations lookup data from {step_args['locations_lookup_path']}")
     locations_lookup = spark.read.option("header", "true").csv(step_args["locations_lookup_path"])
 
     print(f"Raw yellow data count {yellow_data.count()}")
@@ -187,4 +193,5 @@ if __name__ == '__main__':
 
     print(f"Final data count: {data_with_locations.count()}")
 
-    data_with_locations.write.option("overwrite", "true").parquet(step_args["output_path"])
+    print(f"Writing prepared data to {step_args['output_path']}")
+    data_with_locations.write.mode("overwrite").parquet(step_args["output_path"])

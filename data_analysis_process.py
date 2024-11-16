@@ -66,10 +66,24 @@ def parse_job_arguments() -> dict[str, str]:
     arg_parser.add_argument(
         "--source_data_path", required=True, type=str, help="Path of source"
     )
+    arg_parser.add_argument(
+        "--tips_stats_path", required=True, type=str,
+        help="Path to write tips statistics by destination data"
+    )
+    arg_parser.add_argument(
+        "--avg_fare_path", required=True, type=str, help="Path to write avg fare data"
+    )
+    arg_parser.add_argument(
+        "--popular_origin_destination_path", required=True, type=str,
+        help="Path to write popular origin destination data"
+    )
     job_step_args = arg_parser.parse_args()
 
-    return {
-        "source_path": job_step_args.source_data_path
+    job_args = {
+        "source_path": job_step_args.source_data_path,
+        "tips_stats_path": job_step_args.tips_stats_path,
+        "avg_fare_path": job_step_args.avg_fare_path,
+        "popular_origin_destination_path": job_step_args.popular_origin_destination_path
     }
 
 if __name__ == '__main__':
@@ -84,8 +98,17 @@ if __name__ == '__main__':
     tips_stats = tips_by_dropoff_zone(data=source_data)
     tips_stats.show(truncate=False)
 
+    print(f"Writing tips stats data to {step_args['tips_stats_path']}")
+    tips_stats.write.mode("overwrite").parquet(step_args['tips_stats_path'])
+
     avg_fare_by_destination = average_fare_by_destination(data=source_data)
     avg_fare_by_destination.show(truncate=False)
 
+    print(f"Writing average fare by destination stats data to {step_args['avg_fare_path']}")
+    tips_stats.write.mode("overwrite").parquet(step_args['avg_fare_path'])
+
     popular_origin_destination = popular_origin_destination(data=source_data)
     popular_origin_destination.show(truncate=False)
+
+    print(f"Writing popular origin destination data to {step_args['popular_origin_destination_path']}")
+    tips_stats.write.mode("overwrite").parquet(step_args['popular_origin_destination_path'])
