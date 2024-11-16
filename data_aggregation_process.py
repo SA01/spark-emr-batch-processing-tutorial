@@ -72,7 +72,6 @@ def parse_job_arguments() -> dict[str, str]:
         "source_path": job_step_args.source_data_path
     }
 
-
 if __name__ == '__main__':
     step_args = parse_job_arguments()
 

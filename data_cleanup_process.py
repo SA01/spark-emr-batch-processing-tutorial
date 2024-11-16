@@ -76,6 +76,24 @@ def process_green_trips_data(data_start_time_str, data_end_time_str, data: DataF
 
     return res_data
 
+def attach_locations(data: DataFrame, locations_data: DataFrame) -> DataFrame:
+    result_data = (
+        data
+            .join(locations_data, F.col("LocationID") == F.col("PULocationID"))
+            .withColumnRenamed("Borough", "pickup_borough")
+            .withColumnRenamed("Zone", "pickup_zone")
+            .withColumnRenamed("service_zone", "pickup_service_zone")
+            .drop("LocationID")
+            .join(locations_data, F.col("LocationID") == F.col("DOLocationID"))
+            .withColumnRenamed("Borough", "dropoff_borough")
+            .withColumnRenamed("Zone", "dropoff_zone")
+            .withColumnRenamed("service_zone", "dropoff_service_zone")
+            .drop("LocationID")
+    )
+
+    return result_data
+
+  
 def parse_job_arguments() -> dict[str, str]:
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
@@ -83,6 +101,9 @@ def parse_job_arguments() -> dict[str, str]:
     )
     arg_parser.add_argument(
         "--green_trips_path", required=True, type=str, help="Path of green trips data"
+    )
+    arg_parser.add_argument(
+        "--locations_lookup_path", required=True, type=str, help="Path of locations lookup data"
     )
     arg_parser.add_argument(
         "--data_start_date", required=True, type=str, help="Start of data date (YYYY-mm-dd)"
@@ -99,6 +120,7 @@ def parse_job_arguments() -> dict[str, str]:
 
     yellow_trips_path = trim_slash(job_step_args.yellow_trips_path)
     green_trips_path = trim_slash(job_step_args.green_trips_path)
+    locations_lookup_path = trim_slash(job_step_args.locations_lookup_path)
     data_start_timestamp_str = f"{job_step_args.data_start_date} 00:00:00"
     data_end_timestamp_str = f"{job_step_args.data_end_date} 23:59:59"
     output_path = trim_slash(job_step_args.output_path)
@@ -106,6 +128,7 @@ def parse_job_arguments() -> dict[str, str]:
     return {
         "yellow_trips_path": yellow_trips_path,
         "green_trips_path": green_trips_path,
+        "locations_lookup_path": locations_lookup_path,
         "data_start_timestamp_str": data_start_timestamp_str,
         "data_end_timestamp_str": data_end_timestamp_str,
         "output_path": output_path
@@ -129,6 +152,8 @@ if __name__ == '__main__':
         .withColumnRenamed("lpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("lpep_dropoff_datetime", "dropoff_datetime")
     )
+
+    locations_lookup = spark.read.option("header", "true").csv(step_args["locations_lookup_path"])
 
     print(f"Raw yellow data count {yellow_data.count()}")
     print(f"Raw green data count {green_data.count()}")
@@ -158,7 +183,8 @@ if __name__ == '__main__':
     clean_green_data.printSchema()
 
     combined_data = clean_yellow_data.unionByName(clean_green_data)
+    data_with_locations = attach_locations(data = combined_data, locations_data=locations_lookup)
 
-    print(f"Final data count: {combined_data.count()}")
+    print(f"Final data count: {data_with_locations.count()}")
 
-    combined_data.write.option("overwrite", "true").parquet(step_args["output_path"])
+    data_with_locations.write.option("overwrite", "true").parquet(step_args["output_path"])
