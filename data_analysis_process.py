@@ -79,12 +79,17 @@ def parse_job_arguments() -> dict[str, str]:
     )
     job_step_args = arg_parser.parse_args()
 
-    return {
+    job_args = {
         "source_path": job_step_args.source_data_path,
         "tips_stats_path": job_step_args.tips_stats_path,
         "avg_fare_path": job_step_args.avg_fare_path,
         "popular_origin_destination_path": job_step_args.popular_origin_destination_path
     }
+
+    print("Job args")
+    for key, value in job_args.items():
+        print(f"- {key}: {value}")
+    return job_args
 
 if __name__ == '__main__':
     step_args = parse_job_arguments()
