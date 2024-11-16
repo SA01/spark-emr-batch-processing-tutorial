@@ -21,3 +21,4 @@ if __name__ == '__main__':
 
     data = spark.read.parquet(step_args['source_path'] + "/*.parquet")
     print(f"Data count: {data.count()}")
+    data.show(truncate=False)
