@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from pyspark.sql import DataFrame
 import pyspark.sql.functions as F
@@ -91,7 +92,9 @@ def parse_job_arguments() -> dict[str, str]:
 if __name__ == '__main__':
     step_args = parse_job_arguments()
 
-    spark = create_spark_session(app_name="Data Aggregation", is_local=True)
+    IS_LOCAL = os.getenv("LOCAL").lower() == "true"
+
+    spark = create_spark_session(app_name="Data Aggregation", is_local=IS_LOCAL)
 
     source_data = spark.read.parquet(step_args['source_path'] + "/*.parquet")
     print(f"Data count: {source_data.count()}")
