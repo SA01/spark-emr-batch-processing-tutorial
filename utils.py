@@ -10,6 +10,7 @@ def create_spark_session(app_name: str, is_local: False) -> SparkSession:
     )
 
     if is_local:
+        print("creating local environment")
         spark_session = SparkSession\
             .builder\
             .master("local[*]")\
@@ -17,6 +18,7 @@ def create_spark_session(app_name: str, is_local: False) -> SparkSession:
             .appName(app_name) \
             .getOrCreate()
     else:
+        print("running on cluster")
         spark_session = SparkSession \
             .builder \
             .config(conf=conf) \

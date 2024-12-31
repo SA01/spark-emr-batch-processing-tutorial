@@ -1,5 +1,6 @@
 from typing import Callable
 
+import os
 import argparse
 from pyspark.sql import DataFrame
 import pyspark.sql.functions as F
@@ -142,7 +143,9 @@ def parse_job_arguments() -> dict[str, str]:
 
 if __name__ == '__main__':
     step_args = parse_job_arguments()
-    spark = create_spark_session(app_name="Data Cleanup", is_local=True)
+
+    IS_LOCAL = os.getenv("LOCAL").lower() == "true"
+    spark = create_spark_session(app_name="Data Cleanup", is_local=IS_LOCAL)
 
     print(f"Reading Yellow trips data from {step_args['yellow_trips_path']}")
     yellow_data = (
