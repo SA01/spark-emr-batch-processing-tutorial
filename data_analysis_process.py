@@ -86,6 +86,8 @@ def parse_job_arguments() -> dict[str, str]:
         "popular_origin_destination_path": job_step_args.popular_origin_destination_path
     }
 
+    return job_args
+
 if __name__ == '__main__':
     step_args = parse_job_arguments()
 
