@@ -146,19 +146,21 @@ def parse_job_arguments() -> dict[str, str]:
 if __name__ == '__main__':
     step_args = parse_job_arguments()
 
-    IS_LOCAL = os.getenv("LOCAL").lower() == "true"
+    IS_LOCAL = os.getenv("LOCAL").lower() == "true" if os.getenv("LOCAL") else False
     spark = create_spark_session(app_name="Data Cleanup", is_local=IS_LOCAL, logger=logger)
 
-    logger.info(f"Reading Yellow trips data from {step_args['yellow_trips_path']}")
+    yellow_path = step_args["yellow_trips_path"] + "/*.parquet"
+    logger.info(f"Reading Yellow trips data from {yellow_path}")
     yellow_data = (
-        spark.read.parquet(step_args["yellow_trips_path"] + "/*.parquet")
+        spark.read.parquet(yellow_path)
         .withColumnRenamed("tpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("tpep_dropoff_datetime", "dropoff_datetime")
     )
 
-    logger.info(f"Reading Green trips data from {step_args['green_trips_path']}")
+    green_path = step_args["green_trips_path"] + "/*.parquet"
+    logger.info(f"Reading Green trips data from {green_path}")
     green_data = (
-        spark.read.parquet(step_args["green_trips_path"] + "/*.parquet")
+        spark.read.parquet(green_path)
         .withColumnRenamed("lpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("lpep_dropoff_datetime", "dropoff_datetime")
     )

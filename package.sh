@@ -10,7 +10,7 @@ echo "Creating a fresh package folder"
 mkdir job_package
 
 echo "Copying utils.py into job_package as common.py"
-cp utils.py job_package/common.py
+cp utils.py job_package/utils.py
 
 echo "Zipping up Python files"
 zip -r -j job_zip.zip job_package/*.py

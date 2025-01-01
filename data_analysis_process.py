@@ -93,7 +93,7 @@ def parse_job_arguments() -> dict[str, str]:
 if __name__ == '__main__':
     step_args = parse_job_arguments()
 
-    IS_LOCAL = os.getenv("LOCAL").lower() == "true"
+    IS_LOCAL = os.getenv("LOCAL").lower() == "true" if os.getenv("LOCAL") else False
 
     spark = create_spark_session(app_name="Data Aggregation", is_local=IS_LOCAL, logger=logger)
 
