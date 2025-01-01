@@ -110,10 +110,10 @@ if __name__ == '__main__':
     avg_fare_by_destination.show(truncate=False)
 
     print(f"Writing average fare by destination stats data to {step_args['avg_fare_path']}")
-    tips_stats.write.mode("overwrite").parquet(step_args['avg_fare_path'])
+    avg_fare_by_destination.write.mode("overwrite").parquet(step_args['avg_fare_path'])
 
     popular_origin_destination = popular_origin_destination(data=source_data)
     popular_origin_destination.show(truncate=False)
 
     print(f"Writing popular origin destination data to {step_args['popular_origin_destination_path']}")
-    tips_stats.write.mode("overwrite").parquet(step_args['popular_origin_destination_path'])
+    popular_origin_destination.write.mode("overwrite").parquet(step_args['popular_origin_destination_path'])
