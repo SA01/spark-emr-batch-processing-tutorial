@@ -5,7 +5,9 @@ import argparse
 from pyspark.sql import DataFrame
 import pyspark.sql.functions as F
 
-from utils import create_spark_session, trim_slash
+from utils import create_spark_session, trim_slash, initialize_logger
+
+logger = initialize_logger()
 
 numeric_columns = [
     "fare_amount", "extra", "mta_tax", "tip_amount", "tolls_amount", "improvement_surcharge", "total_amount",
@@ -17,17 +19,17 @@ def clean_numeric_fields(data: DataFrame) -> DataFrame:
     data_columns = [str(col) for col in data.schema.names]
     for col_name in numeric_columns:
         if col_name in data_columns:
-            print(f"Cleaning column {col_name}")
+            logger.info(f"Cleaning column {col_name}")
             filtered_data = filtered_data.filter(F.col(col_name) >= 0.0)
         else:
-            print(f"Column {col_name} not found in data")
+            logger.info(f"Column {col_name} not found in data")
 
     return filtered_data
 
 
 def clean_out_of_range_data(min_date_str: str, max_date_str: str) -> Callable[[DataFrame], DataFrame]:
     def clean_out_of_range_data_internal(data: DataFrame) -> DataFrame:
-        print(f"Removing rows with timestamps less than {min_date_str} or greater than {max_date_str}")
+        logger.info(f"Removing rows with timestamps less than {min_date_str} or greater than {max_date_str}")
 
         # | is "or" operation in PySpark
         out_of_range_filter = (
@@ -45,7 +47,7 @@ def clean_out_of_range_data(min_date_str: str, max_date_str: str) -> Callable[[D
 
 
 def process_yellow_trips_data(data_start_time_str, data_end_time_str, data: DataFrame) -> DataFrame:
-    print("Processing yellow trips data")
+    logger.info("Processing yellow trips data")
 
     res_data = (
         data
@@ -61,7 +63,7 @@ def process_yellow_trips_data(data_start_time_str, data_end_time_str, data: Data
     return res_data
 
 def process_green_trips_data(data_start_time_str, data_end_time_str, data: DataFrame) -> DataFrame:
-    print("Processing green trips data")
+    logger.info("Processing green trips data")
 
     res_data = (
         data
@@ -134,9 +136,9 @@ def parse_job_arguments() -> dict[str, str]:
         "output_path": output_path
     }
 
-    print("Job args")
+    logger.info("Job args")
     for key, value in job_args.items():
-        print(f"- {key}: {value}")
+        logger.info(f"- {key}: {value}")
 
     return job_args
 
@@ -145,33 +147,27 @@ if __name__ == '__main__':
     step_args = parse_job_arguments()
 
     IS_LOCAL = os.getenv("LOCAL").lower() == "true"
-    spark = create_spark_session(app_name="Data Cleanup", is_local=IS_LOCAL)
+    spark = create_spark_session(app_name="Data Cleanup", is_local=IS_LOCAL, logger=logger)
 
-    print(f"Reading Yellow trips data from {step_args['yellow_trips_path']}")
+    logger.info(f"Reading Yellow trips data from {step_args['yellow_trips_path']}")
     yellow_data = (
         spark.read.parquet(step_args["yellow_trips_path"] + "/*.parquet")
         .withColumnRenamed("tpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("tpep_dropoff_datetime", "dropoff_datetime")
     )
 
-    print(f"Reading Green trips data from {step_args['green_trips_path']}")
+    logger.info(f"Reading Green trips data from {step_args['green_trips_path']}")
     green_data = (
         spark.read.parquet(step_args["green_trips_path"] + "/*.parquet")
         .withColumnRenamed("lpep_pickup_datetime", "pickup_datetime")
         .withColumnRenamed("lpep_dropoff_datetime", "dropoff_datetime")
     )
 
-    print(f"Reading locations lookup data from {step_args['locations_lookup_path']}")
+    logger.info(f"Reading locations lookup data from {step_args['locations_lookup_path']}")
     locations_lookup = spark.read.option("header", "true").csv(step_args["locations_lookup_path"])
 
-    print(f"Raw yellow data count {yellow_data.count()}")
-    print(f"Raw green data count {green_data.count()}")
-
-    yellow_data.show(truncate=False, n=10)
-    green_data.show(truncate=False, n=10)
-
-    yellow_data.summary().show(truncate=False)
-    green_data.summary().show(truncate=False)
+    logger.info(f"Raw yellow data count {yellow_data.count()}")
+    logger.info(f"Raw green data count {green_data.count()}")
 
     clean_yellow_data = process_yellow_trips_data(
         data_start_time_str=step_args["data_start_timestamp_str"],
@@ -185,16 +181,10 @@ if __name__ == '__main__':
         data=green_data
     )
 
-    clean_yellow_data.summary().show(truncate=False)
-    clean_green_data.summary().show(truncate=False)
-
-    clean_yellow_data.printSchema()
-    clean_green_data.printSchema()
-
     combined_data = clean_yellow_data.unionByName(clean_green_data)
     data_with_locations = attach_locations(data = combined_data, locations_data=locations_lookup)
 
-    print(f"Final data count: {data_with_locations.count()}")
+    logger.info(f"Final data count: {data_with_locations.count()}")
 
-    print(f"Writing prepared data to {step_args['output_path']}")
+    logger.info(f"Writing prepared data to {step_args['output_path']}")
     data_with_locations.write.mode("overwrite").parquet(step_args["output_path"])

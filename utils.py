@@ -1,8 +1,16 @@
+from logging import Logger
+
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
 
+def initialize_logger():
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    return logger
 
-def create_spark_session(app_name: str, is_local: False) -> SparkSession:
+
+def create_spark_session(app_name: str, is_local: False, logger: Logger) -> SparkSession:
     conf = (
         SparkConf()
         .set("spark.driver.memory", "8g")
@@ -10,7 +18,7 @@ def create_spark_session(app_name: str, is_local: False) -> SparkSession:
     )
 
     if is_local:
-        print("creating local environment")
+        logger.info("creating local environment")
         spark_session = SparkSession\
             .builder\
             .master("local[*]")\
@@ -18,7 +26,7 @@ def create_spark_session(app_name: str, is_local: False) -> SparkSession:
             .appName(app_name) \
             .getOrCreate()
     else:
-        print("running on cluster")
+        logger.info("running on cluster")
         spark_session = SparkSession \
             .builder \
             .config(conf=conf) \

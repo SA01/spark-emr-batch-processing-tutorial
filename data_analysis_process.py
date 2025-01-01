@@ -4,8 +4,9 @@ import os
 from pyspark.sql import DataFrame
 import pyspark.sql.functions as F
 
-from utils import create_spark_session
+from utils import create_spark_session, initialize_logger
 
+logger = initialize_logger()
 
 def tips_by_dropoff_zone(data: DataFrame) -> DataFrame:
     result = (
@@ -94,26 +95,22 @@ if __name__ == '__main__':
 
     IS_LOCAL = os.getenv("LOCAL").lower() == "true"
 
-    spark = create_spark_session(app_name="Data Aggregation", is_local=IS_LOCAL)
+    spark = create_spark_session(app_name="Data Aggregation", is_local=IS_LOCAL, logger=logger)
 
     source_data = spark.read.parquet(step_args['source_path'] + "/*.parquet")
-    print(f"Data count: {source_data.count()}")
-    source_data.show(truncate=False)
+    logger.info(f"Data count: {source_data.count()}")
 
     tips_stats = tips_by_dropoff_zone(data=source_data)
-    tips_stats.show(truncate=False)
 
-    print(f"Writing tips stats data to {step_args['tips_stats_path']}")
+    logger.info(f"Writing tips stats data to {step_args['tips_stats_path']}")
     tips_stats.write.mode("overwrite").parquet(step_args['tips_stats_path'])
 
     avg_fare_by_destination = average_fare_by_destination(data=source_data)
-    avg_fare_by_destination.show(truncate=False)
 
-    print(f"Writing average fare by destination stats data to {step_args['avg_fare_path']}")
+    logger.info(f"Writing average fare by destination stats data to {step_args['avg_fare_path']}")
     avg_fare_by_destination.write.mode("overwrite").parquet(step_args['avg_fare_path'])
 
     popular_origin_destination = popular_origin_destination(data=source_data)
-    popular_origin_destination.show(truncate=False)
 
-    print(f"Writing popular origin destination data to {step_args['popular_origin_destination_path']}")
+    logger.info(f"Writing popular origin destination data to {step_args['popular_origin_destination_path']}")
     popular_origin_destination.write.mode("overwrite").parquet(step_args['popular_origin_destination_path'])
