@@ -1,5 +1,20 @@
+# Ignore Python bytecode cache directories
 __pycache__/*
+
+# Ignore IDE-specific configuration files (e.g., JetBrains .idea folder)
 .idea
+
+# Ignore local Java version file (used by some Java development tools)
 .java-version
+
+# Ignore Python virtual environment folder
 venv
+
+# Ignore any local data files or directories
 data/*
+
+# Ignore the build directory created for packaging the application
+job_package
+
+# Ignore the zip archive produced by the packaging step
+job_zip.zip

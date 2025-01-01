@@ -6,7 +6,7 @@ import pyspark.sql.functions as F
 
 from utils import create_spark_session, initialize_logger
 
-logger = initialize_logger()
+logger = initialize_logger("Data Analysis")
 
 def tips_by_dropoff_zone(data: DataFrame) -> DataFrame:
     result = (

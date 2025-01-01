@@ -7,7 +7,7 @@ import pyspark.sql.functions as F
 
 from utils import create_spark_session, trim_slash, initialize_logger
 
-logger = initialize_logger()
+logger = initialize_logger("Data Cleanup")
 
 numeric_columns = [
     "fare_amount", "extra", "mta_tax", "tip_amount", "tolls_amount", "improvement_surcharge", "total_amount",

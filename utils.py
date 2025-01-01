@@ -3,10 +3,10 @@ from logging import Logger
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
 
-def initialize_logger():
+def initialize_logger(logger_name):
     import logging
     logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(logger_name)
     return logger
 
 
