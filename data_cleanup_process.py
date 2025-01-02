@@ -229,7 +229,7 @@ if __name__ == '__main__':
     IS_LOCAL = os.getenv("LOCAL").lower() == "true"
     
     # Create a Spark session for the data analysis process
-    spark = create_spark_session(app_name="Data Cleanup", is_local=IS_LOCAL)
+    spark = create_spark_session(app_name="Data Cleanup", is_local=IS_LOCAL, logger=logger)
 
     # Determine if the script is running in a local environment
     IS_LOCAL = os.getenv("LOCAL").lower() == "true" if os.getenv("LOCAL") else False
