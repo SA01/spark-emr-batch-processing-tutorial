@@ -278,3 +278,5 @@ if __name__ == '__main__':
     # Write the final DataFrame to the specified S3 output path in Parquet format
     logger.info(f"Writing prepared data to {step_args['output_path']}")
     data_with_locations.write.mode("overwrite").parquet(step_args["output_path"])
+
+    logger.info("Completed")
