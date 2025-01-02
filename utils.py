@@ -4,7 +4,7 @@ from pyspark import SparkConf
 from pyspark.sql import SparkSession
 
 
-def initialize_logger(logger_name):
+def initialize_logger(logger_name) -> Logger:
     """
     Initializes and configures a logger with the specified name.
 
