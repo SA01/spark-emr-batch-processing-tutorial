@@ -51,7 +51,7 @@ def create_spark_session(app_name: str, is_local: bool, logger: Logger) -> Spark
             .appName(app_name) \
             .getOrCreate()
     else:
-        logger.info("Creating Spark session on cluster")
+        logger.info("Creating Spark session for cluster")
 
         # Initialize SparkSession for cluster execution without specifying master
         spark_session = SparkSession \
