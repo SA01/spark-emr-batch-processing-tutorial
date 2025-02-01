@@ -22,27 +22,29 @@ download_and_upload() {
   local month="$2"
   local taxi_type="$3"
 
-  # Example: yellow_tripdata_2023-01.parquet
+  # Example: yellow_tripdata_2022-01.parquet
   local file_name="${taxi_type}_tripdata_${year}-${month}.parquet"
   local url="https://d37ci6vzurychx.cloudfront.net/trip-data/${file_name}"
 
   echo "Downloading ${url}..."
   wget -q "${url}" -O "./data/${file_name}"
 
+  # Upload the file to S3
+  # Note: This requires the AWS CLI to be installed and configured
+  # with the appropriate permissions to upload to the S3 bucket.
   echo "Uploading ${file_name} to s3://${S3_BUCKET}/${taxi_type}/${year}/"
   aws s3 cp "./data/${file_name}" "s3://${S3_BUCKET}/${taxi_type}/${year}/"
 
-  # Remove the local copy to keep things clean
+  # Remove the local copy
   rm "./data/${file_name}"
 }
 
-# Loop through years 2024, 2023, 2022
-for year in 2024 2023 2022; do
+# Loop through the months of 2022. It is possible to add multiple years here
+for year in 2022; do
   if [ "$year" -eq 2024 ]; then
     # For 2024, data is available only until October (months 01–10)
     months=$(seq -w 1 10)
   else
-    # For 2023 and 2022, months 01–12
     months=$(seq -w 1 12)
   fi
 
